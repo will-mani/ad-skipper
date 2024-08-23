@@ -27,33 +27,37 @@ for triangle_vertices in triangle_vertices_list:
 
 # in the modified_image, all parts of the image are turned to black 
 # except the areas that are to the left of a "right arrow" triangle
-gray_modified_image = cv2.cvtColor(modified_image, cv2.COLOR_BGR2GRAY) 
-coors_to_preserve = np.where(gray_modified_image == 255)[0], np.where(gray_modified_image == 255)[1] 
+coors_to_preserve = np.where(modified_image == (255, 255, 255))[0], np.where(modified_image == (255, 255, 255))[1] 
 modified_image[coors_to_preserve] = image[coors_to_preserve]
+gray_modified_image = cv2.cvtColor(modified_image, cv2.COLOR_BGR2GRAY)
+_, text_threshold = cv2.threshold(gray_modified_image, 128, 255, cv2.THRESH_BINARY) 
 
-cv2.imshow("Modified", cv2.resize(modified_image, (0,0), fx = 0.7, fy = 0.7))
+cv2.imshow("Text Threshold", cv2.resize(text_threshold, (0,0), fx = 0.7, fy = 0.7))
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
-modified_image_rgb = cv2.cvtColor(modified_image, cv2.COLOR_BGR2RGB)
-pil_modified_image = Image.fromarray(modified_image_rgb)
+pil_modified_image = Image.fromarray(text_threshold)
 
 # image to string of predicted text
 result = pytesseract.image_to_data(pil_modified_image) # image_to_data gives more info (than image_to_string)
 result = result.strip()
 
-####### *** NEED TO HANDLE CASE WHEN PYTESSERACT FINDS NO TEXT & result IS AN EMPTY STRING (result.split("\n") will error out) *** #######
+####### *** CORRECTION TO THE COMMENT IN PREVIOUS COMMIT: error caused by row with 11 elements instead of 12 (the text element was omitted) *** #######
 # turning tab-delimited result string to pandas dataframe
 # the first row of result is the column headers (which we ignore in the body of the dataframe by doing result.split("\n")[1:])
-result_dataframe = pd.DataFrame([x.split('\t') for x in result.split("\n")[1:]],
-                            columns=['level', 'page_num', 'block_num', 'par_num', 'line_num', 'word_num',
+result_list = []
+for row in result.split("\n")[1:]:
+    row_list = row.split("\t")
+    if len(row_list) == 12:
+        result_list.append(row_list)
+result_dataframe = pd.DataFrame(result_list, columns=['level', 'page_num', 'block_num', 'par_num', 'line_num', 'word_num',
                                     'left', 'top', 'width', 'height', 'conf', 'text'])
 
 #print (result_dataframe)
 
 for i in range(len(result_dataframe)):
     row = result_dataframe.iloc[i]
-    # if confidence > 59%, the text is not None and not just white space, then...
+    # if confidence > 59% and the text is not None, not just white space and has more than one character, then...
     if float(row['conf']) > 59 and row['text'] != None and len(row['text'].strip()) > 1:
         start_point = (int(row['left']), int(row['top']))
         end_point = (int(row['left']) + int(row['width']), int(row['top']) + int(row['height']))
@@ -61,7 +65,7 @@ for i in range(len(result_dataframe)):
         print(row['text'])
 
 factor = 0.7
-display_image = cv2.resize(image, (0,0), fx= factor, fy = factor)
+display_image = cv2.resize(image, (0,0), fx = factor, fy = factor)
 
 cv2.imshow("Image", display_image)
 cv2.waitKey(0)

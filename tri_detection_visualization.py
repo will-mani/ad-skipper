@@ -22,10 +22,10 @@ for ad_image in ad_images:
 
     # displaying the images 
     factor = 0.7
-    cv2.imshow('gray', cv2.resize(gray, (0,0), fx= factor, fy = factor)) 
-    cv2.imshow('threshold', cv2.resize(threshold, (0,0), fx= factor, fy = factor)) 
-    cv2.imshow('triangles', cv2.resize(triangles, (0,0), fx= factor, fy = factor))
-    cv2.imshow('image', cv2.resize(image, (0,0), fx= factor, fy = factor)) 
+    cv2.imshow('gray', cv2.resize(gray, (0,0), fx = factor, fy = factor)) 
+    cv2.imshow('threshold', cv2.resize(threshold, (0,0), fx = factor, fy = factor)) 
+    cv2.imshow('triangles', cv2.resize(triangles, (0,0), fx = factor, fy = factor))
+    cv2.imshow('image', cv2.resize(image, (0,0), fx = factor, fy = factor)) 
 
     cv2.waitKey(0) 
     cv2.destroyAllWindows() 
