@@ -13,7 +13,7 @@ image_path = "C://Users//willi//Desktop//Ad skrnshts//ad3window.png"
 image = cv2.imread(image_path)
 
 triangle_vertices_list = triangle_detector.find_triangle_vertices(image_path)
-for triangle_vertices in triangle_vertices_list: 
+for triangle_vertices in triangle_vertices_list:
     top_left_vertex, bottom_left_vertex, far_right_vertex = triangle_vertices
     # top left (start) and bottom right (end) corners of the rectangle that presumably encloses the "skip ad" text
     rectangle_start_x = top_left_vertex[0] - abs(far_right_vertex[0] - top_left_vertex[0]) * 20

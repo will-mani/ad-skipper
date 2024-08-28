@@ -7,26 +7,21 @@ def distance(point1, point2):
     hypotenuse = (horizontal_distance ** 2 + vertical_distance ** 2) ** 0.5
     return hypotenuse
 
-def approximate_triangle_area(triangle_vertex1, triangle_vertex2, triangle_vertex3):
-    vertices_array = np.array([triangle_vertex1, triangle_vertex2, triangle_vertex3])
-    triangle_canvas = np.zeros((max(vertices_array[:, 1]) + 1, max(vertices_array[:, 0]) + 1), dtype = np.uint8)
-    cv2.fillPoly(triangle_canvas, [vertices_array], 255)
-    triangle_coors = np.where(triangle_canvas == 255)
-    return triangle_coors[0].size
-
 def right_arrow_triangle(contour, triangle_vertices_list):
     # resizing the contour list so that a vertex/point is simply
     # a list of length 2 rather than a nested list
     contour_array = np.resize(contour, (len(contour), 2))
-    x_values_list = contour_array[:, 0].tolist()
-    y_values_list = contour_array[:, 1].tolist()
+    x_values_array = contour_array[:, 0]
+    y_values_array = contour_array[:, 1]
 
-    top_left_index = y_values_list.index(min(y_values_list))
+    top_left_index = y_values_array.argmin()
     triangle_vertex1 = contour_array[top_left_index].tolist()
-    bottom_left_index = y_values_list.index(max(y_values_list))
+    bottom_left_index = y_values_array.argmax()
     triangle_vertex2 = contour_array[bottom_left_index].tolist()
-    far_right_index = x_values_list.index(max(x_values_list))
+    far_right_index = x_values_array.argmax()
     triangle_vertex3 = contour_array[far_right_index].tolist()
+
+    triangle_vertices = [triangle_vertex1, triangle_vertex2, triangle_vertex3]
 
     side1_length = distance(triangle_vertex1, triangle_vertex2)
     side2_length = distance(triangle_vertex1, triangle_vertex3)
@@ -34,7 +29,8 @@ def right_arrow_triangle(contour, triangle_vertices_list):
     
     if side1_length == 0 or side2_length == 0 or side3_length == 0:
         return False
-    # checking whether the sides are approximately equilateral
+    # checking whether the sides are roughly equilateral
+    # (difference of at most 30% of the longer side)
     elif abs(side1_length - side2_length) / max(side1_length, side2_length) > 0.3:
         return False
     elif abs(side1_length - side3_length) / max(side1_length, side3_length) > 0.3:
@@ -45,10 +41,10 @@ def right_arrow_triangle(contour, triangle_vertices_list):
     elif abs(triangle_vertex1[0] - triangle_vertex2[0]) / side1_length > 0.05:
         return False
     # making sure the potential triangle is not too small
-    elif approximate_triangle_area(triangle_vertex1, triangle_vertex2, triangle_vertex3) < 10:
+    elif cv2.contourArea(np.array(triangle_vertices)) < 10:
         return False
     
-    triangle_vertices_list.append([triangle_vertex1, triangle_vertex2, triangle_vertex3])
+    triangle_vertices_list.append(triangle_vertices)
     return True
     
 def find_triangle_vertices(image_path):
@@ -69,12 +65,13 @@ def find_triangle_vertices(image_path):
         if i == 0:
             continue
 
-        # cv2.approxPloyDP() approximates the shape 
-        approx = cv2.approxPolyDP( 
-            contour, 0.05 * cv2.arcLength(contour, True), True) 
+        # cv2.approxPloyDP() approximates the number of sizes of the contour
+        perimerter = cv2.arcLength(contour, True)
+        approx_sides = cv2.approxPolyDP( 
+            contour, 0.05 * perimerter, True) 
         
         # checking whether the approximted tirangle is equilateral 
-        if len(approx) == 3:
+        if len(approx_sides) == 3:
             right_arrow_triangle(contour, triangle_vertices_list)
 
     return triangle_vertices_list
