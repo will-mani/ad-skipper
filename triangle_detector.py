@@ -50,7 +50,8 @@ def right_arrow_triangle(contour, triangle_vertices_list):
 def find_triangle_vertices(image_path):
     image = cv2.imread(image_path)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) 
-    _, threshold = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY) 
+    #_, threshold = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY) 
+    threshold = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 21, -5)
 
     # using findContours() function 
     contours, _ = cv2.findContours( 

@@ -26,7 +26,8 @@ for triangle_vertices in triangle_vertices_list:
     cropped_image = image[rectangle_start[1]:rectangle_end[1], rectangle_start[0]:rectangle_end[0]]
     gray_cropped_image = cv2.cvtColor(cropped_image, cv2.COLOR_BGR2GRAY)
     # threshold to better recognize text
-    _, threshold_image = cv2.threshold(gray_cropped_image, 128, 255, cv2.THRESH_BINARY) 
+    #_, threshold_image = cv2.threshold(gray_cropped_image, 128, 255, cv2.THRESH_BINARY) 
+    threshold_image = cv2.adaptiveThreshold(gray_cropped_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 21, -5) 
 
     cv2.imshow("Threshold", cv2.resize(threshold_image, (0,0), fx = 5, fy = 5))
     cv2.waitKey(0)
