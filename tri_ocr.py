@@ -3,6 +3,7 @@ from pytesseract import pytesseract
 import cv2 
 import pandas as pd
 import numpy as np
+import random
 import triangle_detector
 
 path_to_tesseract = "C://Users//willi//AppData//Local//Programs//Tesseract-OCR//tesseract.exe"
@@ -12,8 +13,10 @@ pytesseract.tesseract_cmd = path_to_tesseract
 image_path = "C://Users//willi//Desktop//Ad skrnshts//ad3window.png"
 image = cv2.imread(image_path)
 
-triangle_vertices_list = triangle_detector.find_triangle_vertices(image_path)
-for triangle_vertices in triangle_vertices_list:
+tri_detector = triangle_detector.triangle_detector(image_path)
+triangles_list = tri_detector.find_triangles()
+
+for triangle_vertices in triangles_list: 
     top_left_vertex, bottom_left_vertex, far_right_vertex = triangle_vertices
     # top left (start) and bottom right (end) corners of the rectangle that presumably encloses the "skip ad" text
     rectangle_start_x = top_left_vertex[0] - abs(far_right_vertex[0] - top_left_vertex[0]) * 20
@@ -29,13 +32,17 @@ for triangle_vertices in triangle_vertices_list:
     #_, threshold_image = cv2.threshold(gray_cropped_image, 128, 255, cv2.THRESH_BINARY) 
     threshold_image = cv2.adaptiveThreshold(gray_cropped_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 21, -5) 
 
-    cv2.imshow("Threshold", cv2.resize(threshold_image, (0,0), fx = 5, fy = 5))
+    # blacked_out_image = cropped_image.copy()
+    # blacked_out_image[np.where(threshold_image == 0)] = [0, 0, 0]
+    # rgb_blacked_out_image = cv2.cvtColor(blacked_out_image, cv2.COLOR_BGR2RGB)
+
+    cv2.imshow("Threshold", cv2.resize(threshold_image, (0,0), fx=5, fy=5))
+    cv2.imshow("Gray", cv2.resize(gray_cropped_image, (0,0), fx=5, fy=5))
+    #cv2.imshow("Blackout", cv2.resize(blacked_out_image, (0,0), fx=5, fy=5))
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
     pil_threshold_image = Image.fromarray(threshold_image)
-    pil_threshold_image.show
-
     # image to string of predicted text
     result = pytesseract.image_to_data(pil_threshold_image) # image_to_data gives more info (than image_to_string)
     result = result.strip()
@@ -50,7 +57,8 @@ for triangle_vertices in triangle_vertices_list:
     result_dataframe = pd.DataFrame(result_list, columns=['level', 'page_num', 'block_num', 'par_num', 'line_num', 'word_num',
                                         'left', 'top', 'width', 'height', 'conf', 'text'])
 
-    #print (result_dataframe)
+    print("---------------------")
+    print (result_dataframe)
 
     for i in range(len(result_dataframe)):
         row = result_dataframe.iloc[i]
