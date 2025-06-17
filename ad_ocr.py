@@ -2,12 +2,9 @@ import cv2
 import numpy as np
 from PIL import ImageGrab
 import time
-from pynput.mouse import Button, Controller
 import easyocr
 import pandas as pd
-
-mouse = Controller()
-mouse.position = (10, 20)
+import pyautogui
 
 ocr_reader = easyocr.Reader(['en'], gpu=False)
 
@@ -54,24 +51,41 @@ def detect_skip_text(screen_image):
                 bbox_array = np.array(row['bbox'])
                 center_x = int(np.mean(bbox_array[:, 0]))
                 center_y = int(np.mean(bbox_array[:, 1]) + top_point)
-                skip_box_center = [center_y, center_x]
+                skip_box_center = [center_x, center_y]
                 return skip_box_center
             
         return skip_box_center
 
 
-test_image = cv2.imread('test_images/window.png')
-center = detect_skip_text(test_image)
-print(center)
+# test_image = cv2.imread('test_images/window.png')
+# center = detect_skip_text(test_image)
+# print(center)
 
-def capture_screen(image_grab_bbox, image_factor):
+def capture_screen(image_grab_bbox):
     screenshot = ImageGrab.grab(bbox=image_grab_bbox)
     bgr_screenshot = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-    resized_screenshot = cv2.resize(bgr_screenshot, (0, 0), fx = image_factor, fy = image_factor)
+    resized_screenshot = cv2.resize(bgr_screenshot, (0, 0), fx = 1, fy = 1)
     return resized_screenshot
 
-# whole_screen = capture_screen(image_grab_bbox=None, image_factor=1)
-# # Select region of interest then press ENTER
-# roi = cv2.selectROI("ROI", whole_screen) 
+whole_screen = capture_screen(image_grab_bbox=None)
+# Select region of interest then press ENTER
+roi = cv2.selectROI("ROI", whole_screen) # [top_x, top_y, width, height]
 
 
+while True:
+    roi_screenshot = capture_screen(image_grab_bbox=(int(roi[0]), int(roi[1]), int(roi[0]+roi[2]), int(roi[1]+roi[3])))
+    
+    skip_center = detect_skip_text(roi_screenshot)
+
+    if skip_center != None:
+        x = skip_center[0] + roi[0]
+        y = skip_center[1] + roi[1]
+        print("Skip at x =", x, ", y =", y)
+        pyautogui.click(x, y)
+
+    cv2.imshow("ROI", roi_screenshot)
+
+    k = cv2.waitKey(1) & 0xFF
+    if k == 27:
+        break
+        
