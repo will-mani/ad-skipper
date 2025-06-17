@@ -1,50 +1,77 @@
-from PIL import Image
-from pytesseract import pytesseract
-import cv2 
-import pandas as pd
+import cv2
+import numpy as np
+from PIL import ImageGrab
 import time
+from pynput.mouse import Button, Controller
+import easyocr
+import pandas as pd
 
-path_to_tesseract = "C://Users//willi//AppData//Local//Programs//Tesseract-OCR//tesseract.exe"
-# Providing the tesseract executable location
-pytesseract.tesseract_cmd = path_to_tesseract
+mouse = Controller()
+mouse.position = (10, 20)
 
-images = ["ad3window.png", "ad4FULL.png", "ad5BRIGHT.png", "ad5DIM.png", "ad5mini.png", "ad6busy.png", "ad8DARK.png"]
+ocr_reader = easyocr.Reader(['en'], gpu=False)
 
-for image in images:
-    image_path = "Ad skrnshts//" + image
+model_next_image = cv2.imread('next.png', cv2.IMREAD_GRAYSCALE)
+_, next_thresh = cv2.threshold(model_next_image, 127, 255,0)
+model_next_contours, _ = cv2.findContours(next_thresh, 2, 1)
 
-    start_time = time.time()
-    # Image to string of predicted text
-    result = pytesseract.image_to_data(Image.open(image_path)) # image_to_data gives more info (than image_to_string)
-    result = result.strip()
 
-    print(image)
-    end_time = time.time()
-    print(end_time - start_time, "seconds")
-    print()
+def detect_next_contours(screen_image):
+    next_contours_list = []
+    screen_grayscale = cv2.cvtColor(screen_image, cv2.COLOR_BGR2GRAY)
+    _, screen_thresh = cv2.threshold(screen_grayscale, 127, 255,0)
+    screen_contours, _ = cv2.findContours(screen_thresh, 2, 1)
+    for curr_contour in screen_contours:
+        for model_contour in model_next_contours:
+            difference = cv2.matchShapes(model_contour, curr_contour, 1, 0.0)
+            if difference < 0.1:
+                next_contours_list.append(curr_contour)
+                break
+    return next_contours_list
 
-    # Turning tab-delimited result string to pandas dataframe
-    result_dataframe = pd.DataFrame([x.split('\t') for x in result.split("\n")[1:]],
-                             columns=['level', 'page_num', 'block_num', 'par_num', 'line_num', 'word_num',
-                                      'left', 'top', 'width', 'height', 'conf', 'text'])
 
-    #print (result_dataframe)
+def detect_skip_text(screen_image):
+    skip_box_center = None
 
-    image = cv2.imread(image_path, cv2.IMREAD_COLOR)
+    next_contours_list = detect_next_contours(screen_image)
+    for contour in next_contours_list:
+        reshaped_contour = np.reshape(contour, (contour.shape[0], contour.shape[2]))
+        min_y = min(reshaped_contour[:, 1])
+        max_y = max(reshaped_contour[:, 1])
 
-    for i in range(len(result_dataframe)):
-        row = result_dataframe.iloc[i]
+        height = abs(max_y - min_y)
+        top_point = max(0, min_y - (height * 2))
+        bottom_point = min(screen_image.shape[0] - 1, max_y + (height * 2))
 
-        # If confidence > 59%, the text is not None and not just white space, then...
-        if float(row['conf']) > 59 and row['text'] != None and len(row['text'].strip()) > 1:
+        cropped_image = screen_image[top_point:bottom_point]
+
+        ocr_results = ocr_reader.readtext(cropped_image)
+        results_df = pd.DataFrame(data=ocr_results, columns=['bbox', 'text', 'confidence'])
+
+        for i in range(len(results_df)):
+            row = results_df.iloc[i]
+            if row['text'].lower() in 'skip ad':
+                bbox_array = np.array(row['bbox'])
+                center_x = int(np.mean(bbox_array[:, 0]))
+                center_y = int(np.mean(bbox_array[:, 1]) + top_point)
+                skip_box_center = [center_y, center_x]
+                return skip_box_center
             
-            start_point = (int(row['left']), int(row['top']))
-            end_point = (int(row['left']) + int(row['width']), int(row['top']) + int(row['height']))
-            image = cv2.rectangle(image, start_point, end_point, (0, 0, 255), 1)
+        return skip_box_center
 
-    factor = 0.8
-    display_image = cv2.resize(image, (0,0), fx= factor, fy = factor)
 
-    cv2.imshow("Image", display_image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+test_image = cv2.imread('test_images/window.png')
+center = detect_skip_text(test_image)
+print(center)
+
+def capture_screen(image_grab_bbox, image_factor):
+    screenshot = ImageGrab.grab(bbox=image_grab_bbox)
+    bgr_screenshot = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+    resized_screenshot = cv2.resize(bgr_screenshot, (0, 0), fx = image_factor, fy = image_factor)
+    return resized_screenshot
+
+# whole_screen = capture_screen(image_grab_bbox=None, image_factor=1)
+# # Select region of interest then press ENTER
+# roi = cv2.selectROI("ROI", whole_screen) 
+
+
