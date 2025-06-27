@@ -102,7 +102,7 @@ while True:
         y = skip_center[1] + roi[1]
         if (x > 0 and x < pyautogui.size()[0]) and (y > 0 and y < pyautogui.size()[1]):
             print("Skip at x =", x, ", y =", y, '\n')
-            pyautogui.moveTo(x, y, 0.5, pyautogui.easeInQuad) # x, y, 2 secs, start slow then end fast
+            pyautogui.moveTo(x, y, 0.5, pyautogui.easeInQuad) # x, y, 0.5 secs, start slow then end fast
             pyautogui.click()
             # pyautogui.click(x, y)
 
