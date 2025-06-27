@@ -79,7 +79,10 @@ roi = np.floor(np.array(screen_ratio_roi) * (1 / screen_ratio)).tolist()
 
 
 while True:
-    roi_screenshot = capture_screen(image_grab_bbox=(int(roi[0]), int(roi[1]), int(roi[0] + roi[2]), int(roi[1] + roi[3])))
+    try:
+        roi_screenshot = capture_screen(image_grab_bbox=(int(roi[0]), int(roi[1]), int(roi[0] + roi[2]), int(roi[1] + roi[3])))
+    except:
+        continue
     
     show_ratio = 0.3
     cv2.imshow("ROI", cv2.resize(roi_screenshot, (0, 0), fx=show_ratio, fy=show_ratio))
