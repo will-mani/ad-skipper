@@ -50,7 +50,7 @@ def detect_skip_text(screen_image, next_contours_list):
 
         for i in range(len(results_df)):
             row = results_df.iloc[i]
-            if len(row['text']) > 2 and row['text'].lower() in 'skip ad':
+            if len(row['text']) > 2 and row['text'].lower() in 'skip ads':
                 print(row['text'], row['confidence'])
                 bbox_array = np.array(row['bbox'])
                 center_x = int(np.mean(bbox_array[:, 0]) + left_most_point)
