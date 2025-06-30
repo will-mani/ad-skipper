@@ -1,4 +1,4 @@
-- Run ad_ocr.py (imported libraries need to be installed).
+- Run ad_skippr.py (imported libraries need to be installed).
 - Select region of screen that will be captured. This could be the entire screen, or a small region where the skip ad button will always appear. Select a region you are fully comfortable getting captured. Click and drag to select. If not satisfied with the region, click and drag again.
 - Hit enter or space once satisfied with the selected blue region.
 - Make sure the area where the skip ad button will appear is in the captured region (check ROI screen), sit back (or stand front), and let your ads be skipped by the cursor moving, mouse clicking program.
